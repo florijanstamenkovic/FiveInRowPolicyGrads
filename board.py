@@ -20,6 +20,10 @@ class Board:
         self.board = np.zeros((size, size), dtype=int)
         self.available = list(product(range(size), range(size)))
 
+    def flat_one_hot(self):
+        b = self.board
+        return np.concatenate((b == 0, b == 1, b == 2)).flatten().astype('f4')
+
     def print_board(self):
         for row in range(self.size):
             if row != 0:
@@ -56,6 +60,9 @@ class Board:
                 if win:
                     return player
         return None
+
+    def move_count(self):
+        return self.size ** 2 - len(self.available)
 
 
 # Simple demo/test of Board class functionalities.
