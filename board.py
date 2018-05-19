@@ -65,22 +65,3 @@ class Board:
 
     def move_count(self):
         return self.size**2 - len(self.available)
-
-
-# Simple demo/test of Board class functionalities.
-def main():
-    size = 5
-    b = Board(size)
-    for i in range(size**2):
-        move = b.random_move()
-        print("Board after move: ", move)
-        b.place_move(*move, i % 2 + 1)
-        b.print_board()
-        winner = b.check_winner(3)
-        if (winner):
-            print("Winner:", winner)
-            break
-
-
-if __name__ == '__main__':
-    main()

@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from board import Board
-import opponent
+import player
 
 NET_PLAYER = 1
 OTHER_PLAYER = 2
@@ -27,14 +27,6 @@ class Net(nn.Module):
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return F.softmax(x, 0)
-
-
-def opponent_for_name(name):
-    if name == 'random':
-        return opponent.random_move
-    if name == 'greedy':
-        return opponent.greedy
-    raise Exception("Unknown opponent name: " + name)
 
 
 def train(args, model, device, optimizer):
@@ -64,7 +56,7 @@ def train(args, model, device, optimizer):
                                  NET_PLAYER)
                 move_outputs.append(output[move])
             else:
-                move = opponent_for_name(args.opponent)(OTHER_PLAYER, board)
+                move = player.for_name(args.opponent)(OTHER_PLAYER, board)
                 board.place_move(move[0], move[1], OTHER_PLAYER)
 
             net_plays_next = not net_plays_next

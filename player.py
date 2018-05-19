@@ -4,7 +4,7 @@ from random import randint
 from itertools import product
 
 
-def random_move(player, board):
+def random(player, board):
     assert (board.available)
     return board.available[randint(0, len(board.available) - 1)]
 
@@ -27,3 +27,12 @@ def greedy(player, board):
         return moves[randint(0, len(moves) - 1)]
 
     return random_move(player, board)
+
+def for_name(name):
+    if name == 'random':
+        return random
+    if name == 'greedy':
+        return greedy
+    raise Exception("Unknown opponent name: " + name)
+
+
