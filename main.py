@@ -10,9 +10,11 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from board import Board
+import opponent
 
 NET_PLAYER = 1
 OTHER_PLAYER = 2
+
 
 class Net(nn.Module):
     def __init__(self, board_side, hidden_layer=512):
@@ -25,18 +27,27 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.softmax(x, 0)
 
-def train(board_side, win_row, game_count, model, device, optimizer):
+
+def opponent_for_name(name):
+    if name == 'random':
+        return opponent.random
+    if name == 'greedy':
+        return opponent.greedy
+    raise Exception("Unknown opponent name: " + name)
+
+
+def train(args, model, device, optimizer):
     model.train()
 
     move_counts = []
     winners = []
     t0 = time()
-    for game_ind in range(game_count):
-        board = Board(board_side)
+    for game_ind in range(args.games_per_update):
+        board = Board(args.board_side)
         move_outputs = []
 
         net_plays_next = bool(game_ind % 2)
-        for move_ind in range(board_side ** 2):
+        for move_ind in range(args.board_side ** 2):
             if net_plays_next:
                 x = torch.from_numpy(board.flat_one_hot()).to(device)
                 output = model(x)
@@ -47,21 +58,21 @@ def train(board_side, win_row, game_count, model, device, optimizer):
                 probs /= probs.sum()
                 move = np.random.choice(probs.size, p=probs)
 
-                board.place_move(move // board_side,
-                                 move % board_side,
+                board.place_move(move // args.board_side,
+                                 move % args.board_side,
                                  NET_PLAYER)
                 move_outputs.append(output[move])
             else:
-                move = board.random_move()
+                move = opponent_for_name(args.opponent)(OTHER_PLAYER, board)
                 board.place_move(move[0], move[1], OTHER_PLAYER)
 
             net_plays_next = not net_plays_next
-            winner = board.check_winner(win_row)
+            winner = board.check_winner(args.win_row)
             if winner:
                 move_counts.append(board.move_count())
                 winners.append(winner)
                 break
-            if move_ind == board_side ** 2 - 1:
+            if move_ind == args.board_side ** 2 - 1:
                 winners.append(0)
 
         # Calculate losses and apply gradient
@@ -75,7 +86,7 @@ def train(board_side, win_row, game_count, model, device, optimizer):
 
         optimizer.step()
 
-    print("Played", game_count, "games in ", time() - t0, " secs, with average",
+    print("Played", args.games_per_update, "games in ", time() - t0, " secs, with average",
           np.mean(move_counts), "moves")
     print("Net won ", (np.array(winners) == NET_PLAYER).mean())
 
@@ -98,7 +109,10 @@ def parse_args():
                         help='disables CUDA training')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging training status')
+    parser.add_argument('--opponent', default='random',
+                        help='the opponent used during training')
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -107,10 +121,11 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
 
     model = Net(args.board_side).to(device)
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+                          momentum=args.momentum)
 
     for _ in range(args.updates):
-        train(args.board_side, args.win_row, args.games_per_update, model, device, optimizer)
+        train(args, model, device, optimizer)
 
 
 if __name__ == '__main__':

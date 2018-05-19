@@ -3,8 +3,8 @@
 import numpy as np
 from itertools import product
 
-class Board:
 
+class Board:
     @staticmethod
     def player_sym(ind):
         if ind == 0:
@@ -15,36 +15,32 @@ class Board:
             return "O"
 
     def __init__(self, size):
-        assert(isinstance(size, int))
+        assert (isinstance(size, int))
         self.size = size
         self.board = np.zeros((size, size), dtype=int)
         self.available = list(product(range(size), range(size)))
 
-<<<<<<< HEAD
     def flat_one_hot(self):
         b = self.board
         return np.concatenate((b == 0, b == 1, b == 2)).flatten().astype('f4')
 
-=======
->>>>>>> 1f2774e88f088bd155b97a40dd2c596765ed212b
     def print_board(self):
         for row in range(self.size):
             if row != 0:
                 print("-+" * (self.size - 1) + "-")
-            print ("|".join(Board.player_sym(x) for x in self.board[row]))
+            print("|".join(Board.player_sym(x) for x in self.board[row]))
+
+    def is_legal(self, x, y):
+        return x > 0 and x < self.size and y > 0 and y < self.size
 
     def is_free(self, x, y):
         return self.board[x, y] == 0
 
     def place_move(self, x, y, player):
-        assert(self.is_free(x, y))
-        assert(player == 1 or player == 2)
+        assert (self.is_free(x, y))
+        assert (player == 1 or player == 2)
         self.board[x, y] = player
         self.available.remove((x, y))
-
-    def random_move(self):
-        assert(self.available)
-        return self.available[np.random.randint(len(self.available))]
 
     def check_winner(self, required):
         for i, j in product(range(self.size), range(self.size)):
@@ -53,30 +49,29 @@ class Board:
                 continue
             for direction in np.array(((1, 0), (0, 1), (1, 1), (-1, 1))):
                 win = True
-                for pos in [np.array([i, j]) + direction * d for d in range(required)]:
+                for pos in [
+                        np.array([i, j]) + direction * d
+                        for d in range(required)
+                ]:
                     invalid = (pos < 0).sum() or (pos >= self.size).sum()
-                    if invalid:
+                    if not self.is_legal(
+                            pos[0],
+                            pos[1]) or self.board[pos[0], pos[1]] != player:
                         win = False
                         break
-                    if self.board[pos[0], pos[1]] != player:
-                        win = False
                 if win:
                     return player
         return None
 
-<<<<<<< HEAD
     def move_count(self):
-        return self.size ** 2 - len(self.available)
+        return self.size**2 - len(self.available)
 
 
 # Simple demo/test of Board class functionalities.
-=======
-
->>>>>>> 1f2774e88f088bd155b97a40dd2c596765ed212b
 def main():
-    size =5
+    size = 5
     b = Board(size)
-    for i in range(size ** 2):
+    for i in range(size**2):
         move = b.random_move()
         print("Board after move: ", move)
         b.place_move(*move, i % 2 + 1)
@@ -84,8 +79,8 @@ def main():
         winner = b.check_winner(3)
         if (winner):
             print("Winner:", winner)
-            break;
+            break
 
 
 if __name__ == '__main__':
-    main();
+    main()
