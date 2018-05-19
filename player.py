@@ -26,7 +26,7 @@ def greedy(player, board):
     if moves:
         return moves[randint(0, len(moves) - 1)]
 
-    return random_move(player, board)
+    return random(player, board)
 
 def for_name(name):
     if name == 'random':

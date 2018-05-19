@@ -31,7 +31,7 @@ class Board:
             print("|".join(Board.player_sym(x) for x in self.board[row]))
 
     def is_legal(self, x, y):
-        return x > 0 and x < self.size and y > 0 and y < self.size
+        return x >= 0 and x < self.size and y >= 0 and y < self.size
 
     def is_free(self, x, y):
         return self.board[x, y] == 0
@@ -43,7 +43,7 @@ class Board:
         self.available.remove((x, y))
 
     def check_winner(self, required):
-        for i, j in product(range(self.size), range(self.size)):
+        for i, j in product(range(self.size), repeat=2):
             player = self.board[i, j]
             if player == 0:
                 continue
@@ -53,7 +53,6 @@ class Board:
                         np.array([i, j]) + direction * d
                         for d in range(required)
                 ]:
-                    invalid = (pos < 0).sum() or (pos >= self.size).sum()
                     if not self.is_legal(
                             pos[0],
                             pos[1]) or self.board[pos[0], pos[1]] != player:
