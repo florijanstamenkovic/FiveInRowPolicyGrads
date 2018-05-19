@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import logging
 from time import time
 
 import numpy as np
@@ -30,7 +31,7 @@ class Net(nn.Module):
 
 def opponent_for_name(name):
     if name == 'random':
-        return opponent.random
+        return opponent.random_move
     if name == 'greedy':
         return opponent.greedy
     raise Exception("Unknown opponent name: " + name)
@@ -68,12 +69,12 @@ def train(args, model, device, optimizer):
 
             net_plays_next = not net_plays_next
             winner = board.check_winner(args.win_row)
-            if winner:
+            if winner is None and move_ind == args.board_side ** 2 - 1:
+                winner = 0
+            if winner is not None:
                 move_counts.append(board.move_count())
                 winners.append(winner)
                 break
-            if move_ind == args.board_side ** 2 - 1:
-                winners.append(0)
 
         # Calculate losses and apply gradient
         net_won = winners[-1] == NET_PLAYER
@@ -86,9 +87,9 @@ def train(args, model, device, optimizer):
 
         optimizer.step()
 
-    print("Played", args.games_per_update, "games in ", time() - t0, " secs, with average",
-          np.mean(move_counts), "moves")
-    print("Net won ", (np.array(winners) == NET_PLAYER).mean())
+    logging.info("Played %d games in %.2f secs, average %.2f moves",
+                 args.games_per_update, time() - t0, np.mean(move_counts))
+    logging.info("Net won %.2f", (np.array(winners) == NET_PLAYER).mean())
 
 
 def parse_args():
@@ -115,6 +116,7 @@ def parse_args():
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     args = parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
