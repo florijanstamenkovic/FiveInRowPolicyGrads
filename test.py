@@ -28,7 +28,7 @@ def main():
         b.place_move(*move, current)
         logging.info("Board after move %d", move_ind)
         b.print_board()
-        winner = b.check_winner(args.win_row)
+        winner = b.check_winner(args.win_row, *move)
         if winner is None and len(b.available) == 0:
             winner = 0
         if winner is not None:

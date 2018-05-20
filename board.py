@@ -48,24 +48,28 @@ class Board:
         self.board[x, y] = player
         self.available.remove((x, y))
 
-    def check_winner(self, required):
-        for i, j in product(range(self.size), repeat=2):
-            player = self.board[i, j]
-            if player == 0:
-                continue
-            for direction in np.array(((1, 0), (0, 1), (1, 1), (-1, 1))):
-                win = True
+    def check_winner(self, required, x, y):
+        ''' Checks if move at (x, y) is part of a winning combination
+        of required length '''
+        player = self.board[x, y]
+        if player == 0:
+            return None
+        for axis in np.array(((1, 0), (0, 1), (1, 1), (-1, 1))):
+            found = 1
+            for direction in [axis, -axis]:
                 for pos in [
-                        np.array([i, j]) + direction * d
-                        for d in range(required)
+                        np.array([x, y]) + direction * d
+                        for d in range(1, required)
                 ]:
-                    if not self.is_legal(
+                    if self.is_legal(
                             pos[0],
-                            pos[1]) or self.board[pos[0], pos[1]] != player:
-                        win = False
+                            pos[1]) and self.board[pos[0], pos[1]] == player:
+                        found += 1
+                    else:
                         break
-                if win:
-                    return player
+
+            if found >= required:
+                return player
         return None
 
     def move_count(self):

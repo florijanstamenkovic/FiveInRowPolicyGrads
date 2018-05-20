@@ -56,6 +56,7 @@ def train(args, model, device, optimizer):
 
         net_plays_next = bool(game_ind % 2)
         for move_ind in range(args.board_side ** 2):
+            move = None
             if net_plays_next:
                 x = torch.from_numpy(board.conv_one_hot()).to(device)
                 output = model(x)
@@ -65,17 +66,15 @@ def train(args, model, device, optimizer):
                 probs = (output.detach().cpu().numpy() * mask)
                 probs /= probs.sum()
                 move = np.random.choice(probs.size, p=probs)
-
-                board.place_move(move // args.board_side,
-                                 move % args.board_side,
-                                 NET_PLAYER)
                 move_outputs.append(output[move])
+                move = move // args.board_side, move % args.board_side
+                board.place_move(move[0], move[1], NET_PLAYER)
             else:
                 move = player.for_name(args.opponent)(OTHER_PLAYER, board)
                 board.place_move(move[0], move[1], OTHER_PLAYER)
 
             net_plays_next = not net_plays_next
-            winner = board.check_winner(args.win_row)
+            winner = board.check_winner(args.win_row, move[0], move[1])
             if winner is None and move_ind == args.board_side ** 2 - 1:
                 winner = 0
             if winner is not None:
