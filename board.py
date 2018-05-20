@@ -20,7 +20,13 @@ class Board:
         self.board = np.zeros((size, size), dtype=int)
         self.available = list(product(range(size), range(size)))
 
+    def conv_one_hot(self):
+        ''' Returns a numpy array of shape (1, 3, H, W). '''
+        b = self.board
+        return np.expand_dims(np.stack((b == 0, b == 1, b == 2)), 0).astype('f4')
+
     def flat_one_hot(self):
+        ''' Returns a numpy array of shape (H * W, ). '''
         b = self.board
         return np.concatenate((b == 0, b == 1, b == 2)).flatten().astype('f4')
 
