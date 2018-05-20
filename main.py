@@ -39,7 +39,8 @@ class ConvNet(nn.Module):
     def __init__(self, board_side, conv1=(32, 2, 1), conv2=(64, 2, 2), fc1=256):
         super(ConvNet, self).__init__()
         self.pre_fc_side = board_side
-        self.conv1 = nn.Conv2d(3, conv1[0], kernel_size=conv1[1], stride=conv1[2])
+        self.conv1 = nn.Conv2d(
+            3, conv1[0], kernel_size=conv1[1], stride=conv1[2])
         self.pre_fc_side = ConvNet.valid_size(self.pre_fc_side, *conv1[1:])
         self.conv2 = nn.Conv2d(
             conv1[0], conv2[0], kernel_size=conv2[1], stride=conv2[2])
@@ -57,49 +58,58 @@ class ConvNet(nn.Module):
         return F.softmax(x, 0)
 
 
+def play_game(model, opponent, net_plays_next, args, device):
+    """
+    Plays a single game. One player is the given model,
+    the other depends on the args.
+    Returns (winner, model_move_outputs)
+    """
+    board = Board(args.board_side)
+    move_outputs = []
+
+    for move_ind in range(args.board_side ** 2):
+        move = None
+        if net_plays_next:
+            x = torch.from_numpy(board.conv_one_hot()).to(device)
+            output = model(x)
+
+            # Random selection of a legal move based on probs.
+            mask = (board.board.flatten() == 0).astype('f4')
+            probs = (output.detach().cpu().numpy() * mask)
+            probs /= probs.sum()
+            move = np.random.choice(probs.size, p=probs)
+            move_outputs.append(output[move])
+            move = move // args.board_side, move % args.board_side
+            board.place_move(move[0], move[1], NET_PLAYER)
+        else:
+            move = opponent(OTHER_PLAYER, board)
+            board.place_move(move[0], move[1], OTHER_PLAYER)
+
+        net_plays_next = not net_plays_next
+        winner = board.check_winner(args.win_row, move[0], move[1])
+        if winner is None and move_ind == args.board_side ** 2 - 1:
+            winner = 0
+        if winner is not None:
+            return winner, move_outputs
+
+
 def train(args, model, device, optimizer):
     model.train()
 
-    move_counts = []
     winners = []
     t0 = time()
-    for game_ind in range(args.games_per_update):
-        board = Board(args.board_side)
-        move_outputs = []
-
-        net_plays_next = bool(game_ind % 2)
-        for move_ind in range(args.board_side ** 2):
-            move = None
-            if net_plays_next:
-                x = torch.from_numpy(board.conv_one_hot()).to(device)
-                output = model(x)
-
-                # Random selection of a legal move based on probs.
-                mask = (board.board.flatten() == 0).astype('f4')
-                probs = (output.detach().cpu().numpy() * mask)
-                probs /= probs.sum()
-                move = np.random.choice(probs.size, p=probs)
-                move_outputs.append(output[move])
-                move = move // args.board_side, move % args.board_side
-                board.place_move(move[0], move[1], NET_PLAYER)
-            else:
-                move = player.for_name(args.opponent)(OTHER_PLAYER, board)
-                board.place_move(move[0], move[1], OTHER_PLAYER)
-
-            net_plays_next = not net_plays_next
-            winner = board.check_winner(args.win_row, move[0], move[1])
-            if winner is None and move_ind == args.board_side ** 2 - 1:
-                winner = 0
-            if winner is not None:
-                move_counts.append(board.move_count())
-                winners.append(winner)
-                break
+    move_counts = []
+    opponent = player.for_name(args.opponent)
+    for game_ind in range(args.episodes_per_update):
+        winner, move_outputs = play_game(
+            model, opponent, bool(game_ind % 2), args, device)
+        winners.append(winner)
+        move_counts.append(len(move_outputs) * 2)
 
         # Calculate losses and apply gradient
-        net_won = winners[-1] == NET_PLAYER
         model.zero_grad()
         for move_output in move_outputs:
-            if not net_won:
+            if not winner == NET_PLAYER:
                 move_output = 1 - move_output
             loss = -move_output.log()
             loss.backward()
@@ -107,7 +117,7 @@ def train(args, model, device, optimizer):
         optimizer.step()
 
     logging.info("Played %d games in %.2f secs, average %.2f moves",
-                 args.games_per_update, time() - t0, np.mean(move_counts))
+                 args.episodes_per_update, time() - t0, np.mean(move_counts))
     winners = np.array(winners)
     logging.info("Net won %d (%.2f), tie: %d, lost %d",
                  (winners == NET_PLAYER).sum(),
@@ -116,24 +126,44 @@ def train(args, model, device, optimizer):
                  (winners == OTHER_PLAYER).sum())
 
 
+def evaluate(args, model, device):
+    with torch.no_grad():
+        for name, opponent in player.all_players().items():
+            logging.info("Evaluating against '%s':", name)
+            winners = []
+            for game_ind in range(args.eval_episodes):
+                winner, _ = play_game(model, opponent, bool(game_ind % 2), args, device)
+                winners.append(winner)
+
+            winners = np.array(winners)
+            logging.info("Net won %d (%.2f), tie: %d, lost %d",
+                         (winners == NET_PLAYER).sum(),
+                         (winners == NET_PLAYER).mean(),
+                         (winners == 0).sum(),
+                         (winners == OTHER_PLAYER).sum())
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='TicTacToe policy gradients')
     parser.add_argument('--board-side', type=int, default=3,
                         help='number of tiles on one side of the board')
     parser.add_argument('--win-row', type=int, default=3,
                         help='number of same-in-a-row for win')
-    parser.add_argument('--games-per-update', type=int, default=64, metavar='N',
+    parser.add_argument('--opponent', default='random',
+                        help='the opponent used during training')
+
+    parser.add_argument('--episodes-per-update', type=int, default=128, metavar='N',
                         help='number of games to play per model update')
     parser.add_argument('--updates', type=int, default=100, metavar='N',
                         help='the number of net updates to perform')
+    parser.add_argument('--eval-episodes', type=int, default=256,
+                        help='how many episodes are played in evaluation')
+
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
-    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
-                        help='how many batches to wait before logging training status')
-    parser.add_argument('--opponent', default='random',
-                        help='the opponent used during training')
+
     return parser.parse_args()
 
 
@@ -150,6 +180,7 @@ def main():
 
     for _ in range(args.updates):
         train(args, model, device, optimizer)
+    evaluate(args, model, device)
 
 
 if __name__ == '__main__':

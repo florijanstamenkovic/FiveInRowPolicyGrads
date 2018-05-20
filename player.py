@@ -28,16 +28,16 @@ def greedy(player, board):
 
     return random(player, board)
 
+def all_players():
+    return {'random': random, 'greedy': greedy}
+
 def for_name(name):
     if name == 'random':
         return random
     if name == 'greedy':
         return greedy
     if name == 'mixed':
-        if randint(0, 1):
-            return random
-        return greedy
+        players = list(all_players().values())
+        return players[randint(0, len(players) - 1)]
 
     raise Exception("Unknown opponent name: " + name)
-
-
