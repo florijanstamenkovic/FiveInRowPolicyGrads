@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import math
 from time import time
 
 import numpy as np
@@ -30,14 +31,26 @@ class Net(nn.Module):
 
 
 class ConvNet(nn.Module):
-    def __init__(self, board_side, conv1=64, fc1=256):
+    @staticmethod
+    def valid_size(in_size, field, stride):
+        ''' Calculates conv otput for given input size, field size and stride. '''
+        return math.ceil((in_size - field + 1) / stride)
+
+    def __init__(self, board_side, conv1=(32, 2, 1), conv2=(64, 2, 2), fc1=256):
         super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, conv1, kernel_size=2)
-        self.fc1 = nn.Linear((board_side - 1) ** 2 * conv1, fc1)
+        self.pre_fc_side = board_side
+        self.conv1 = nn.Conv2d(3, conv1[0], kernel_size=conv1[1], stride=conv1[2])
+        self.pre_fc_side = ConvNet.valid_size(self.pre_fc_side, *conv1[1:])
+        self.conv2 = nn.Conv2d(
+            conv1[0], conv2[0], kernel_size=conv2[1], stride=conv2[2])
+        self.pre_fc_side = ConvNet.valid_size(self.pre_fc_side, *conv2[1:])
+        self.fc1 = nn.Linear(self.pre_fc_side ** 2 * conv2[0], fc1)
         self.fc2 = nn.Linear(fc1, board_side ** 2)
+        print(self)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
         x = x.view(-1)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
@@ -132,8 +145,8 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
 
     model = ConvNet(args.board_side).to(device)
-    optimizer = optim.SGD(model.parameters(), lr=args.lr)
-    # optimizer = optim.RMSprop(model.parameters(), lr=1e-3)
+    # optimizer = optim.SGD(model.parameters(), lr=args.lr)
+    optimizer = optim.RMSprop(model.parameters(), lr=1e-3)
 
     for _ in range(args.updates):
         train(args, model, device, optimizer)
