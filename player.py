@@ -33,6 +33,11 @@ def for_name(name):
         return random
     if name == 'greedy':
         return greedy
+    if name == 'mixed':
+        if randint(0, 1):
+            return random
+        return greedy
+
     raise Exception("Unknown opponent name: " + name)
 
 
