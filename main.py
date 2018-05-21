@@ -98,7 +98,7 @@ def update(args, model, device, optimizer):
                 prob = 1 - chosen_move_prob
             loss = -prob.log()
             loss.backward()
-            total_loss += loss.detach().numpy()
+            total_loss += loss.detach().to(device)
     optimizer.step()
 
     return winners, total_loss
