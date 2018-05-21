@@ -130,7 +130,7 @@ def parse_args():
                         help='number of games to play per model update')
     parser.add_argument('--updates', type=int, default=100, metavar='N',
                         help='the number of net updates to perform')
-    parser.add_argument('--eval-episodes', type=int, default=512,
+    parser.add_argument('--eval-episodes', type=int, default=256,
                         help='how many episodes are played in evaluation')
 
     parser.add_argument('--lr', type=float, default=0.003,
