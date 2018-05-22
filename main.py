@@ -136,8 +136,8 @@ def parse_args():
 
     parser.add_argument('--lr', type=float, default=0.0003,
                         help='learning rate')
-    parser.add_argument('--no-cuda', action='store_true', default=False,
-                        help='disables CUDA training')
+    parser.add_argument('--cuda', action='store_true', default=False,
+                        help='enables CUDA training')
 
     return parser.parse_args()
 
@@ -145,13 +145,12 @@ def parse_args():
 def main():
     logging.basicConfig(level=logging.INFO)
     args = parse_args()
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    use_cuda = args.cuda and torch.cuda.is_available()
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
     model = ConvNet(args.board_side).to(device)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.5)
-    # optimizer = optim.RMSprop(model.parameters(), lr=1e-3)
 
     logging.info("Eval : ---------------")
     evaluate(args, model, device)
