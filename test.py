@@ -11,7 +11,7 @@ import player
 def main():
     """ A manual test of the Board logic. """
 
-    parser = argparse.ArgumentParser(description='TicTacToe policy gradients')
+    parser = argparse.ArgumentParser(description='Five-in-a-row Board test')
     parser.add_argument('--board-side', type=int, default=3,
                         help='number of tiles on one side of the board')
     parser.add_argument('--win-row', type=int, default=3,
