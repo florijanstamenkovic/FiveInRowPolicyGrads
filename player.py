@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-from random import randint
+from random import randint, random
 from itertools import product
 
 
-def random(player, board):
+def random_move(player, board):
     assert (board.available)
     return board.available[randint(0, len(board.available) - 1)]
 
@@ -26,18 +26,17 @@ def greedy(player, board):
     if moves:
         return moves[randint(0, len(moves) - 1)]
 
-    return random(player, board)
+    return random_move(player, board)
 
 def all_players():
-    return {'random': random, 'greedy': greedy}
+    return {'random': random_move, 'greedy': greedy}
 
 def for_name(name):
     if name == 'random':
-        return random
+        return random_move
     if name == 'greedy':
         return greedy
     if name == 'mixed':
-        players = list(all_players().values())
-        return players[randint(0, len(players) - 1)]
+        return random_move if random() < 0.3 else greedy
 
     raise Exception("Unknown opponent name: " + name)

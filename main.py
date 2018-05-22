@@ -121,7 +121,8 @@ def evaluate(args, model, device):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Five-in-a-row policy gradients')
+    parser = argparse.ArgumentParser(
+        description='Five-in-a-row policy gradients')
     parser.add_argument('--board-side', type=int, default=12,
                         help='number of tiles on one side of the board')
     parser.add_argument('--win-row', type=int, default=5,
@@ -158,11 +159,13 @@ def main():
     logging.info("Eval : ---------------")
     evaluate(args, model, device)
 
-    logging.info("Train : ---------------")
+    logging.info("Training : ---------------")
     t0 = time()
     for update_ind in range(args.updates):
         t1 = time()
         win_info, total_loss = update(args, model, device, optimizer)
+        if update_ind % (args.updates // 20) != 0:
+            continue
         logging.info("Update %d/%d: %d episodes in %.2f secs, %s, loss: %.2f",
                      update_ind, args.updates,
                      args.episodes_per_update, time() - t1,
