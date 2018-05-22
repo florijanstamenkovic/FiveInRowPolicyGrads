@@ -124,6 +124,7 @@ def parse_args():
     parser.add_argument('--win-row', type=int, default=5,
                         help='number of same-in-a-row for win')
     parser.add_argument('--opponent', default='mixed',
+                        choices=['random', 'greedy', 'mixed'],
                         help='the opponent used during training')
 
     parser.add_argument('--episodes-per-update', type=int, default=32, metavar='N',
