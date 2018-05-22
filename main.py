@@ -119,21 +119,21 @@ def evaluate(args, model, device):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='TicTacToe policy gradients')
-    parser.add_argument('--board-side', type=int, default=3,
+    parser.add_argument('--board-side', type=int, default=12,
                         help='number of tiles on one side of the board')
-    parser.add_argument('--win-row', type=int, default=3,
+    parser.add_argument('--win-row', type=int, default=5,
                         help='number of same-in-a-row for win')
     parser.add_argument('--opponent', default='mixed',
                         help='the opponent used during training')
 
     parser.add_argument('--episodes-per-update', type=int, default=32, metavar='N',
                         help='number of games to play per model update')
-    parser.add_argument('--updates', type=int, default=100, metavar='N',
+    parser.add_argument('--updates', type=int, default=256, metavar='N',
                         help='the number of net updates to perform')
     parser.add_argument('--eval-episodes', type=int, default=256,
                         help='how many episodes are played in evaluation')
 
-    parser.add_argument('--lr', type=float, default=0.003,
+    parser.add_argument('--lr', type=float, default=0.0003,
                         help='learning rate')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
