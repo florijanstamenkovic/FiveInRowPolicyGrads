@@ -5,52 +5,43 @@ from itertools import product
 
 
 class Board:
-    @staticmethod
-    def player_sym(ind):
-        if ind == 0:
-            return " "
-        if ind == 1:
-            return "X"
-        if ind == 2:
-            return "O"
+    """ Tracks a single game state. """
 
-    def __init__(self, size):
-        assert (isinstance(size, int))
-        self.size = size
-        self.board = np.zeros((size, size), dtype=int)
-        self.available = list(product(range(size), range(size)))
+    def __init__(self, side):
+        """ Creates a board of side * side size. """
+        assert (isinstance(side, int))
+        self.side = side
+        self.board = np.zeros((side, side), dtype=int)
+        self.available = list(product(range(side), range(side)))
 
     def conv_one_hot(self):
-        ''' Returns a numpy array of shape (1, 3, H, W). '''
+        """ Returns the board state in one-hot encoding. The returned
+        array has shape (1, 3, side, side) where each of the three channels
+        represents either player or a free position.
+        """
         b = self.board
         return np.expand_dims(np.stack((b == 0, b == 1, b == 2)), 0).astype('f4')
 
-    def flat_one_hot(self):
-        ''' Returns a numpy array of shape (H * W, ). '''
-        b = self.board
-        return np.concatenate((b == 0, b == 1, b == 2)).flatten().astype('f4')
-
-    def print_board(self):
-        for row in range(self.size):
-            if row != 0:
-                print("-+" * (self.size - 1) + "-")
-            print("|".join(Board.player_sym(x) for x in self.board[row]))
-
     def is_legal(self, x, y):
-        return x >= 0 and x < self.size and y >= 0 and y < self.size
+        """ Indicates if the given position is within the board. """
+        return x >= 0 and x < self.side and y >= 0 and y < self.side
 
     def is_free(self, x, y):
+        """ Indicates if the given position is unoccupied. """
         return self.board[x, y] == 0
 
     def place_move(self, x, y, player):
+        """ Places a player move on the stated positon. Assert's that's OK. """
         assert (self.is_free(x, y))
         assert (player == 1 or player == 2)
         self.board[x, y] = player
         self.available.remove((x, y))
 
     def check_winner(self, required, x, y):
-        ''' Checks if move at (x, y) is part of a winning combination
-        of required length '''
+        """ Checks if move at (x, y) is part of a winning combination
+        of required length. If so returns the player with that combination.
+        If it is not, None is returned.
+        """
         player = self.board[x, y]
         if player == 0:
             return None
@@ -71,6 +62,3 @@ class Board:
             if found >= required:
                 return player
         return None
-
-    def move_count(self):
-        return self.size**2 - len(self.available)

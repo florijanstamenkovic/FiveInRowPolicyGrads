@@ -10,8 +10,8 @@ def random(player, board):
 
 
 def greedy(player, board):
-    ''' Chooses a move adjacent to the existing move of the same player.
-    If there are multiple such moves one is chosen at random. '''
+    """ Chooses a move adjacent to the existing move of the same player.
+    If there are multiple such moves one is chosen at random. """
 
     def adjacent_legal_free_tiles(x, y):
         for i, j in product([x - 1, x, x + 1], [y - 1, y, y + 1]):
@@ -19,7 +19,7 @@ def greedy(player, board):
                 yield (i, j)
 
     moves = []
-    for x, y in product(range(board.size), repeat=2):
+    for x, y in product(range(board.side), repeat=2):
         if board.board[x, y] == player:
             moves.extend(adjacent_legal_free_tiles(x, y))
 

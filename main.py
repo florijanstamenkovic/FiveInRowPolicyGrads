@@ -14,11 +14,14 @@ import torch.optim as optim
 from board import Board
 import player
 
+# Board values for the trained model and the opponent
+# used for training.
 MODEL = 1
 OPPONENT = 2
 
 
 def win_info_to_string(win_info):
+    """ Formats a list of ints (game winners) into a summary. """
     win_info = np.array(win_info)
     return "model won %d/%d (%.2f), tie: %d, lost %d" % (
         (win_info == MODEL).sum(), win_info.size,
@@ -42,10 +45,8 @@ class ConvNet(nn.Module):
 
 
 def play_game(model, opponent, net_plays_next, args, device):
-    """
-    Plays a single game. One player is the given model,
-    the other depends on the args.
-    Returns (winner, chosen_move_probabilities)
+    """ Plays a single game. One player is the given model, the other
+    is the given opponent. Returns (winner, chosen_move_probabilities).
     """
     board = Board(args.board_side)
     move_outputs = []
@@ -77,6 +78,7 @@ def play_game(model, opponent, net_plays_next, args, device):
 
 
 def update(args, model, device, optimizer):
+    """ Performs a single update of the given model. """
     model.train()
 
     winners = []
@@ -105,6 +107,7 @@ def update(args, model, device, optimizer):
 
 
 def evaluate(args, model, device):
+    """ Evaluates the given model against all opponents. """
     with torch.no_grad():
         for name, opponent in player.all_players().items():
             logging.info("Evaluating against '%s':", name)
@@ -131,7 +134,7 @@ def parse_args():
                         help='number of games to play per model update')
     parser.add_argument('--updates', type=int, default=256, metavar='N',
                         help='the number of net updates to perform')
-    parser.add_argument('--eval-episodes', type=int, default=256,
+    parser.add_argument('--eval-episodes', type=int, default=128,
                         help='how many episodes are played in evaluation')
 
     parser.add_argument('--lr', type=float, default=0.0003,

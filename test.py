@@ -9,6 +9,8 @@ import player
 
 
 def main():
+    """ A manual test of the Board logic. """
+
     parser = argparse.ArgumentParser(description='TicTacToe policy gradients')
     parser.add_argument('--board-side', type=int, default=3,
                         help='number of tiles on one side of the board')
@@ -21,13 +23,28 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     b = board.Board(args.board_side)
+    def print_board():
+        def player_sym(ind):
+            if ind == 0:
+                return " "
+            if ind == 1:
+                return "X"
+            if ind == 2:
+                return "O"
+
+        for row in range(b.side):
+            if row != 0:
+                print("-+" * (b.side - 1) + "-")
+            print("|".join(player_sym(x) for x in b.board[row]))
+
+
     winner = None
     for move_ind in count():
         current = 1 + move_ind % 2
         move = player.for_name(args.player)(current, b)
         b.place_move(*move, current)
         logging.info("Board after move %d", move_ind)
-        b.print_board()
+        print_board()
         winner = b.check_winner(args.win_row, *move)
         if winner is None and len(b.available) == 0:
             winner = 0
